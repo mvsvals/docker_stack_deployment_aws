@@ -96,12 +96,12 @@ resource "aws_security_group" "db_sg" {
   }
 
   ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
     security_groups = [aws_security_group.web_sg.id]
   }
-  
+
   egress = []
 }
 
@@ -116,16 +116,16 @@ resource "aws_key_pair" "generated_key" {
 }
 
 resource "local_file" "private_key_pem" {
-  content          = tls_private_key.ssh_key.private_key_pem
-  filename         = "${path.module}/${var.ssh_key_name}"
+  content         = tls_private_key.ssh_key.private_key_pem
+  filename        = "${path.module}/${var.ssh_key_name}"
   file_permission = "0600"
 }
 
 resource "aws_instance" "db" {
-  ami           = var.ami
-  instance_type = var.instance_type
-  key_name      = var.ssh_key_name
-  subnet_id     = aws_subnet.private.id
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  key_name               = var.ssh_key_name
+  subnet_id              = aws_subnet.private.id
   vpc_security_group_ids = [aws_security_group.db_sg.id]
   tags = {
     Name = "db"
@@ -135,7 +135,7 @@ resource "aws_instance" "db" {
 resource "aws_instance" "web" {
   count                  = var.web_instance_count
   ami                    = var.ami
-  instance_type = var.instance_type
+  instance_type          = var.instance_type
   key_name               = var.ssh_key_name
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
