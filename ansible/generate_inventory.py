@@ -9,10 +9,6 @@ web_instances = data["web_instances_info"]["value"]
 
 lines = []
 
-lines.append("[bastion]")
-lines.append(f"bastion ansible_host={bastion_ip}")
-lines.append("")
-
 proxy_cmd = (
     f'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
     f'-i ../terraform/phpapp-key ec2-user@{bastion_ip} -W %h:%p'
