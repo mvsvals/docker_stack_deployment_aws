@@ -85,7 +85,7 @@ resource "aws_security_group" "web_sg" {
 
 resource "aws_security_group" "db_sg" {
   name        = "db-sg"
-  description = "Allows DB access from web instances and SSH access from maintenance IP"
+  description = "Allows DB access from web instances"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -99,10 +99,31 @@ resource "aws_security_group" "db_sg" {
     from_port       = 22
     to_port         = 22
     protocol        = "tcp"
-    security_groups = [aws_security_group.web_sg.id]
+    security_groups = [aws_security_group.bastion_sg.id]
   }
 
   egress = []
+}
+
+resource "aws_security_group" "bastion_sg" {
+  name        = "bastion-sg"
+  description = "Allows SSH accesss to DB from maintenance IP"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${var.maintenance_ip}/32"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
 }
 
 resource "tls_private_key" "ssh_key" {
@@ -119,6 +140,17 @@ resource "local_file" "private_key_pem" {
   content         = tls_private_key.ssh_key.private_key_pem
   filename        = "${path.module}/${var.ssh_key_name}"
   file_permission = "0600"
+}
+
+resource "aws_instance" "bastion" {
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  key_name               = var.ssh_key_name
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
+  tags = {
+    Name = "bastion"
+  }
 }
 
 resource "aws_instance" "db" {

@@ -10,6 +10,14 @@ output "web_instances_info" {
   ]
 }
 
+output "bastion_instance_info" {
+  description = "Public IP of the bastion instance"
+  value = {
+    name      = aws_instance.bastion.tags["Name"]
+    public_ip = aws_instance.bastion.public_ip
+  }
+}
+
 output "db_instance_info" {
   description = "Name and private IP of db instance"
   value = {
