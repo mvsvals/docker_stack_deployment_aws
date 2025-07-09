@@ -99,7 +99,7 @@ resource "aws_security_group" "db_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["${var.maintenance_ip}/32"]
+    security_groups = [aws_security_group.web_sg.id]
   }
 
 }

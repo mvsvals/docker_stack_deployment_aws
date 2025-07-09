@@ -15,6 +15,5 @@ output "db_instance_info" {
   value = {
     name       = aws_instance.db.tags["Name"]
     private_ip = aws_instance.db.private_ip
-    public_ip  = aws_instance.db.public_ip
   }
 }
