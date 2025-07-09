@@ -1,6 +1,6 @@
 import json
 
-KEY_PATH = "../terraform/phpapp-key"
+INVENTORY_FILE = "inventory.ini"
 
 with open("tf_output.json") as f:
     data = json.load(f)
@@ -12,26 +12,22 @@ web_instances = data["web_instances_info"]["value"]
 lines = []
 
 lines.append("[bastion]")
-lines.append(f"bastion ansible_host={bastion_ip} ansible_user=ec2-user ansible_ssh_private_key_file={KEY_PATH}")
+lines.append(f"bastion ansible_host={bastion_ip}")
 lines.append("")
 
+proxy_cmd = f'ssh ec2-user@{bastion_ip} -W %h:%p'
 lines.append("[db]")
-proxy_cmd = f'ssh -i {KEY_PATH} ec2-user@{bastion_ip} -W %h:%p'
 lines.append(
-    f"db ansible_host={db_ip} ansible_user=ec2-user "
-    f"ansible_ssh_private_key_file={KEY_PATH} "
-    f"ansible_ssh_common_args='-o ProxyCommand=\"{proxy_cmd}\"'"
+    f"db ansible_host={db_ip} ansible_ssh_common_args='-o ProxyCommand=\"{proxy_cmd}\"'"
 )
 lines.append("")
 
 lines.append("[web]")
 for web in web_instances:
-    lines.append(
-        f"{web['name']} ansible_host={web['public_ip']} ansible_user=ec2-user ansible_ssh_private_key_file={KEY_PATH}"
-    )
+    lines.append(f"{web['name']} ansible_host={web['public_ip']}")
 
 with open("inventory.ini", "w") as f:
-    f.write("\n".join(lines))
+    f.write("\n".join(lines) + "\n")  
 
-print(f"Inventory created -> {INVENTORY_FILE}")
+print(f"Inventory created -> inventory.ini")
 
