@@ -132,13 +132,13 @@ resource "tls_private_key" "ssh_key" {
 }
 
 resource "aws_key_pair" "generated_key" {
-  key_name   = var.ssh_key_name
+  key_name   = "phpapp-key"
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
 resource "local_file" "private_key_pem" {
   content         = tls_private_key.ssh_key.private_key_pem
-  filename        = "${path.module}/${var.ssh_key_name}"
+  filename        = "${path.module}/phpapp-key"
   file_permission = "0600"
 }
 
