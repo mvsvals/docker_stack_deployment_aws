@@ -1,7 +1,5 @@
 import json
 
-INVENTORY_FILE = "inventory.ini"
-
 with open("tf_output.json") as f:
     data = json.load(f)
 
@@ -15,7 +13,10 @@ lines.append("[bastion]")
 lines.append(f"bastion ansible_host={bastion_ip}")
 lines.append("")
 
-proxy_cmd = f'ssh ec2-user@{bastion_ip} -W %h:%p'
+proxy_cmd = (
+    f'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
+    f'-i ../terraform/phpapp-key ec2-user@{bastion_ip} -W %h:%p'
+)
 lines.append("[db]")
 lines.append(
     f"db ansible_host={db_ip} ansible_ssh_common_args='-o ProxyCommand=\"{proxy_cmd}\"'"
@@ -29,5 +30,5 @@ for web in web_instances:
 with open("inventory.ini", "w") as f:
     f.write("\n".join(lines) + "\n")  
 
-print(f"Inventory created -> inventory.ini")
+print("Inventory created -> inventory.ini")
 

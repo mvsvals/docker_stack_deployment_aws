@@ -10,7 +10,7 @@
     ],
     "value": {
       "name": "bastion",
-      "public_ip": "3.72.11.146"
+      "public_ip": "3.121.206.177"
     }
   },
   "db_instance_info": {
@@ -24,7 +24,7 @@
     ],
     "value": {
       "name": "db",
-      "private_ip": "10.0.2.147"
+      "private_ip": "10.0.2.55"
     }
   },
   "web_instances_info": {
@@ -61,18 +61,18 @@
     "value": [
       {
         "name": "web1",
-        "private_ip": "10.0.1.41",
-        "public_ip": "3.75.205.34"
+        "private_ip": "10.0.1.179",
+        "public_ip": "18.192.122.214"
       },
       {
         "name": "web2",
-        "private_ip": "10.0.1.101",
-        "public_ip": "52.59.170.76"
+        "private_ip": "10.0.1.93",
+        "public_ip": "18.196.64.184"
       },
       {
         "name": "web3",
-        "private_ip": "10.0.1.89",
-        "public_ip": "3.120.244.59"
+        "private_ip": "10.0.1.79",
+        "public_ip": "3.70.129.247"
       }
     ]
   }

@@ -102,9 +102,13 @@ resource "aws_security_group" "db_sg" {
     security_groups = [aws_security_group.bastion_sg.id]
   }
 
-  egress = []
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
 }
-
 resource "aws_security_group" "bastion_sg" {
   name        = "bastion-sg"
   description = "Allows SSH accesss to DB from maintenance IP"
@@ -145,7 +149,7 @@ resource "local_file" "private_key_pem" {
 resource "aws_instance" "bastion" {
   ami                    = var.ami
   instance_type          = var.instance_type
-  key_name               = var.ssh_key_name
+  key_name               = "phpapp-key"
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.bastion_sg.id]
   tags = {
@@ -156,7 +160,7 @@ resource "aws_instance" "bastion" {
 resource "aws_instance" "db" {
   ami                    = var.ami
   instance_type          = var.instance_type
-  key_name               = var.ssh_key_name
+  key_name               = "phpapp-key"
   subnet_id              = aws_subnet.private.id
   vpc_security_group_ids = [aws_security_group.db_sg.id]
   tags = {
@@ -168,7 +172,7 @@ resource "aws_instance" "web" {
   count                  = var.web_instance_count
   ami                    = var.ami
   instance_type          = var.instance_type
-  key_name               = var.ssh_key_name
+  key_name               = "phpapp-key"
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   tags = {
