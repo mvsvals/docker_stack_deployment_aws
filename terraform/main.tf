@@ -101,7 +101,8 @@ resource "aws_security_group" "db_sg" {
     protocol    = "tcp"
     security_groups = [aws_security_group.web_sg.id]
   }
-
+  
+  egress = []
 }
 
 resource "tls_private_key" "ssh_key" {
