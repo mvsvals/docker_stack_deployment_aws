@@ -1,0 +1,20 @@
+---
+- name: Setup Docker
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Docker
+      dnf:
+        name: docker
+        state: latest
+    - name: Start & enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Add ec2-user to Docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+

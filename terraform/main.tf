@@ -36,6 +36,21 @@ resource "aws_subnet" "private" {
   }
 }
 
+resource "aws_eip" "nat_eip" {
+  tags = {
+    Name = "nat-eip"
+  }
+}
+
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id = aws_subnet.public.id
+  tags = {
+    Name = "main-nat-gateway"
+  }
+}
+
+
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
   route {
@@ -50,6 +65,22 @@ resource "aws_route_table" "public" {
 resource "aws_route_table_association" "public_association" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat.id
+  }
+  tags = {
+    Name = "private-route-table"
+  }
+}
+
+resource "aws_route_table_association" "private_association" {
+  subnet_id = aws_subnet.private.id
+  route_table_id = aws_route_table.private.id
 }
 
 resource "aws_security_group" "web_sg" {
@@ -106,7 +137,7 @@ resource "aws_security_group" "db_sg" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["10.0.0.0/16"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 resource "aws_security_group" "bastion_sg" {

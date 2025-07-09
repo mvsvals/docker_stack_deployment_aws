@@ -6,7 +6,8 @@ cd terraform || exit 1
 terraform init
 terraform apply -auto-approve
 terraform output -json > ../ansible/tf_output.json
-cd ../ansible || exit
+cd ../ansible || exit 1
 python3 generate_inventory.py
-ansible-playbook -i inventory.ini playbook.yml
+ansible all -m ping
+ansible-playbook playbook.yml
 
