@@ -15,13 +15,24 @@ proxy_cmd = (
 )
 lines.append("[db]")
 lines.append(
-    f"db ansible_host={db_ip} ansible_ssh_common_args='-o ProxyCommand=\"{proxy_cmd}\"'"
+    f"db1 ansible_host={db_ip} ansible_ssh_common_args='-o ProxyCommand=\"{proxy_cmd}\"'"
 )
 lines.append("")
 
 lines.append("[web]")
 for web in web_instances:
     lines.append(f"{web['name']} ansible_host={web['public_ip']}")
+
+lines.append("")
+lines.append("[manager]")
+lines.append("web1")
+
+lines.append("")
+lines.append("[workers]")
+lines.append("web2")
+lines.append("web3")
+lines.append("db1")
+
 
 with open("inventory.ini", "w") as f:
     f.write("\n".join(lines) + "\n")  

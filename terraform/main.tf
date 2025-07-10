@@ -44,7 +44,7 @@ resource "aws_eip" "nat_eip" {
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
-  subnet_id = aws_subnet.public.id
+  subnet_id     = aws_subnet.public.id
   tags = {
     Name = "main-nat-gateway"
   }
@@ -79,7 +79,7 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route_table_association" "private_association" {
-  subnet_id = aws_subnet.private.id
+  subnet_id      = aws_subnet.private.id
   route_table_id = aws_route_table.private.id
 }
 
@@ -96,10 +96,38 @@ resource "aws_security_group" "web_sg" {
   }
 
   ingress {
-    from_port   = 80
-    to_port     = 80
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 2377
+    to_port     = 2377
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"] # VPC CIDR
+  }
+
+  ingress {
+    from_port   = 7946
+    to_port     = 7946
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  ingress {
+    from_port   = 7946
+    to_port     = 7946
+    protocol    = "udp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  ingress {
+    from_port   = 4789
+    to_port     = 4789
+    protocol    = "udp"
+    cidr_blocks = ["10.0.0.0/16"]
   }
 
   egress {
@@ -114,32 +142,6 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
-resource "aws_security_group" "db_sg" {
-  name        = "db-sg"
-  description = "Allows DB access from web instances"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web_sg.id]
-  }
-
-  ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion_sg.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
 resource "aws_security_group" "bastion_sg" {
   name        = "bastion-sg"
   description = "Allows SSH accesss to DB from maintenance IP"
@@ -159,6 +161,56 @@ resource "aws_security_group" "bastion_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+}
+
+resource "aws_security_group" "db_sg" {
+  name        = "db-sg"
+  description = "Allows DB access from web instances"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion_sg.id]
+  }
+
+
+  ingress {
+    from_port       = 2377
+    to_port         = 2377
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+
+  ingress {
+    from_port       = 7946
+    to_port         = 7946
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  ingress {
+    from_port       = 7946
+    to_port         = 7946
+    protocol        = "udp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  ingress {
+    from_port       = 4789
+    to_port         = 4789
+    protocol        = "udp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "tls_private_key" "ssh_key" {
