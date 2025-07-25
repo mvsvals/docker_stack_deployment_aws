@@ -1,0 +1,172 @@
+---
+- name: Setup Docker & dependencies
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Docker
+      dnf:
+        name: docker
+        state: latest
+
+    - name: Install Docker SDK for Python
+      dnf:
+        name: python3-docker
+        state: latest
+
+    - name: Ensure Pip is installed
+      dnf:
+        name: python3-pip
+        state: present
+
+    - name: Ensure Jsondiff is installed
+      pip:
+        name: jsondiff
+
+    - name: Start & enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ec2-user to Docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
+
+- name: Download webapp files from Github
+  hosts: all
+  tasks:
+    - name: Install Git
+      dnf:
+        name: git
+        state: latest
+      become: yes
+
+    - name: Create web app directory
+      file:
+        path: /home/ec2-user/bgapp
+        state: directory
+        mode: '0755'
+        owner: ec2-user
+        group: ec2-user  
+
+    - name: Clone Github repo
+      git:
+        repo: 'https://github.com/shekeriev/bgapp.git'
+        dest: /home/ec2-user/bgapp
+        version: main
+
+
+- name: Build Docker images
+  hosts: all
+  become: true
+  tasks:
+    - name: Build Docker web image on web nodes
+      docker_image:
+        name: bgapp-web
+        source: build
+        build:
+          path: /home/ec2-user/bgapp
+          dockerfile: Dockerfile.web
+        tag: 1.0
+      when: "'web' in group_names"
+
+    - name: Build docker db image on the db node
+      docker_image:
+        name: bgapp-db
+        source: build
+        build:
+          path: /home/ec2-user/bgapp
+          dockerfile: Dockerfile.db
+        tag: 1.0
+      when: "'db' in group_names"
+
+
+- name: Initialize swarm & get worker join token
+  hosts: manager
+  become: true
+  tasks:
+    - name: Get private IP
+      command: hostname -I
+      register: ip_result
+
+    - name: Initialize docker Swarm
+      community.docker.docker_swarm:
+        state: present
+        advertise_addr: "{{ ip_result.stdout.split()[0] }}"
+
+    - name: Get worker join token
+      community.docker.docker_swarm_info:
+      register: swarm_info
+
+    - name: Set join token and manager IP as global facts
+      set_fact:
+        global_swarm_join_token: "{{ swarm_info.swarm_facts.JoinTokens.Worker }}"
+        global_manager_ip: "{{ ip_result.stdout.split()[0] }}"
+
+
+- name: Join swarm with workers
+  hosts: workers
+  become: true
+  tasks:
+    - name: Join Swarm as worker
+      community.docker.docker_swarm:
+        state: join
+        join_token: "{{ hostvars['web1'].global_swarm_join_token }}"
+        remote_addrs:
+          - "{{ hostvars['web1'].global_manager_ip }}"
+
+
+- name: Gather docker node names
+  hosts: all
+  become: true
+  tasks:
+    - name: Get Docker Swarm node hostname
+      command: docker info --format '{{ "{{.Name}}" }}'
+      register: docker_node_name
+
+    - name: Set fact for Swarm node hostname
+      set_fact:
+        swarm_node_hostname: "{{ docker_node_name.stdout }}"
+
+
+- name: Label nodes from the manager
+  hosts: manager
+  become: true
+  tasks:
+    - name: Label web nodes with web role
+      community.docker.docker_node:
+        hostname: "{{ hostvars[item].swarm_node_hostname }}"
+        labels:
+          role: web
+      loop: "{{ groups['web'] }}"
+
+    - name: Label db nodes with db role
+      community.docker.docker_node:
+        hostname: "{{ hostvars[item].swarm_node_hostname }}"
+        labels:
+          role: db
+      loop: "{{ groups['db'] }}"
+
+
+- name: Deploy application stack
+  hosts: manager
+  become: true
+  tasks:
+    - name: Copy custom docker-compose.yml
+      copy:
+        src: ../docker/docker-compose.yml
+        dest: /home/ec2-user/bgapp/docker-compose.yml
+        owner: ec2-user
+        group: ec2-user
+        mode: '0644'
+        force: true
+
+    - name: Deploy bgapp stack
+      community.docker.docker_stack:
+        name: bgapp
+        state: present
+        compose:
+          - /home/ec2-user/bgapp/docker-compose.yml

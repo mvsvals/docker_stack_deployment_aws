@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+    web:
+        image: bgapp-web:1.0
+        deploy:
+            replicas: 5
+            placement:
+              constraints:
+                - node.labels.role == web
+        ports:
+            - 80:80
+        volumes:
+            - "/home/ec2-user/bgapp/web:/var/www/html:ro"
+        networks:
+            - app-network
+    db:
+        image: bgapp-db:1.0
+        deploy:
+          placement:
+            constraints:
+              - node.labels.role == db
+        networks:
+            - app-network
+        environment:
+            MYSQL_ROOT_PASSWORD: "Password1"
+networks:
+    app-network:
